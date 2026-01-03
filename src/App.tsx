@@ -57,6 +57,10 @@ function App() {
                     </div>
                 </div>
             )}
+
+            <p>
+                Created by Priyanka Kishore - Jan 2026
+            </p>
         </>
     )
 }
