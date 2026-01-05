@@ -1,17 +1,73 @@
 import './App.css'
 import {createMarkerSet} from "./utils/createMarkerSet";
 import type {MarkerSet} from "./models/MarkerSet";
-import {useState} from "react";
+import {useState, useRef} from "react";
 import {pickRandomMarker} from "./utils/pickRandomMarker";
 import type {Marker} from "./models/Marker";
 
 function App() {
     const [markerSet] = useState<MarkerSet>(() => createMarkerSet());
     const [markerPick, setMarkerPick] = useState<Marker>();
+    const [isScrolling, setIsScrolling] = useState(false);
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const [stripKey, setStripKey] = useState(0);
+    const stripRef = useRef<HTMLDivElement>(null);
+    const cardWidth = 120; // Width of each marker card in the strip (100px + 20px gap)
 
     const handleMarkerPicker = () => {
-        const newPick = pickRandomMarker(markerSet ? markerSet.markers : []);
-        setMarkerPick(newPick);
+        if (!markerSet || isScrolling) return;
+        
+        setIsScrolling(true);
+        setMarkerPick(undefined); // Clear previous result
+        
+        const newPick = pickRandomMarker(markerSet.markers);
+        
+        // Find the index of the selected marker
+        const selectedIndex = markerSet.markers.findIndex(m => m.code === newPick.code);
+        
+        const totalMarkers = markerSet.markers.length;
+        const viewportWidth = stripRef.current?.parentElement?.clientWidth || window.innerWidth;
+        
+        // Change the key to force remount - this resets everything cleanly
+        setStripKey(prev => prev + 1);
+        setScrollPosition(0); // Start from 0
+        
+        // Calculate final position: multiple full scrolls + position of selected marker
+        // We have 5 sets of markers, so we need to ensure we stay within bounds
+        const fullScrolls = 3 + Math.random() * 2; // 3-5 full scrolls
+        const maxSets = 5;
+        
+        // Use modulo to wrap the scroll distance within our available sets
+        // This ensures we never exceed the available markers
+        const scrollDistance = (fullScrolls * totalMarkers * cardWidth) % (maxSets * totalMarkers * cardWidth);
+        
+        // Target the selected marker in set 1 (second set) - safe choice
+        const targetSet = 1;
+        const targetPosition = (targetSet * totalMarkers + selectedIndex) * cardWidth;
+        
+        // Final position: wrapped scroll + target
+        let finalPosition = scrollDistance + targetPosition;
+        
+        // Ensure we don't exceed max - if we do, wrap to an earlier set
+        const maxPosition = maxSets * totalMarkers * cardWidth;
+        if (finalPosition >= maxPosition) {
+            // Wrap to set 0 with the same marker
+            finalPosition = selectedIndex * cardWidth;
+        }
+        
+        // Center the selected marker in the viewport
+        const centeredPosition = finalPosition - (viewportWidth / 2) + (cardWidth / 2);
+        
+        // Wait for remount to complete, then start animation
+        setTimeout(() => {
+            setScrollPosition(centeredPosition);
+        }, 50);
+        
+        // Wait for animation to complete
+        setTimeout(() => {
+            setMarkerPick(newPick);
+            setIsScrolling(false);
+        }, 3050); // Match animation duration + buffer
     };
 
     // Function to determine if a color is light or dark
@@ -43,12 +99,48 @@ function App() {
                     <button 
                         className="random-pick-button" 
                         onClick={handleMarkerPicker} 
-                        disabled={!markerSet}
+                        disabled={!markerSet || isScrolling}
                     >
-                        Random pick!
+                        {isScrolling ? 'Spinning...' : 'Random pick!'}
                     </button>
                     
-                    {markerPick && (
+                    {/* Scrolling Strip */}
+                    <div className="strip-container">
+                        <div 
+                            key={stripKey}
+                            ref={stripRef}
+                            className={`scrolling-strip ${isScrolling ? 'scrolling' : ''}`}
+                            style={{ transform: `translateX(-${scrollPosition}px)` }}
+                        >
+                            {/* Duplicate markers for seamless scrolling - 5 sets to ensure we never run out */}
+                            {markerSet?.markers && [
+                                ...markerSet.markers.map((marker, idx) => ({ marker, set: 0, idx })),
+                                ...markerSet.markers.map((marker, idx) => ({ marker, set: 1, idx })),
+                                ...markerSet.markers.map((marker, idx) => ({ marker, set: 2, idx })),
+                                ...markerSet.markers.map((marker, idx) => ({ marker, set: 3, idx })),
+                                ...markerSet.markers.map((marker, idx) => ({ marker, set: 4, idx }))
+                            ].map((item) => {
+                                const textColor = isLightColor(item.marker.hex) ? '#000000' : '#FFFFFF';
+                                return (
+                                    <div 
+                                        key={`${item.set}-${item.idx}`}
+                                        className="strip-card"
+                                        style={{
+                                            backgroundColor: item.marker.hex,
+                                            color: textColor
+                                        }}
+                                    >
+                                        <div className="strip-card-code">{item.marker.code}</div>
+                                        <div className="strip-card-name">{item.marker.name}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="strip-indicator-left"></div>
+                        <div className="strip-indicator-right"></div>
+                    </div>
+                    
+                    {markerPick && !isScrolling && (
                         <div className="random-pick-result">
                             <h3>Randomly selected marker:</h3>
                             <div className="selected-marker" style={{color: markerPick.hex}}>
