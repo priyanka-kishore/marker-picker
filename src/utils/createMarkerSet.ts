@@ -1,5 +1,5 @@
-import type {MarkerSet} from "../models/MarkerSet.ts";
-import sfaih from "../assets/sfaih-101-marker-set.json";
+import type {MarkerSet} from "../models/MarkerSet";
+import sfaih from "../data/sfaih-101-marker-set.json";
 
 
 export function createMarkerSet(): MarkerSet {

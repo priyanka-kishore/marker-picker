@@ -1,4 +1,4 @@
-import type {Marker} from "../models/Marker.ts";
+import type {Marker} from "../models/Marker";
 
 export function pickRandomMarker(set: Marker[]): Marker {
     console.log("in marker picker")

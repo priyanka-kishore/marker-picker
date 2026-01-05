@@ -1,9 +1,9 @@
 import './App.css'
-import {createMarkerSet} from "./picker/createMarkerSet.ts";
-import type {MarkerSet} from "./models/MarkerSet.ts";
+import {createMarkerSet} from "./utils/createMarkerSet";
+import type {MarkerSet} from "./models/MarkerSet";
 import {useState} from "react";
-import {pickRandomMarker} from "./picker/pickRandomMarker.ts";
-import type {Marker} from "./models/Marker.ts";
+import {pickRandomMarker} from "./utils/pickRandomMarker";
+import type {Marker} from "./models/Marker";
 
 function App() {
     const [markerSet, setMarkerSet] = useState<MarkerSet>();

@@ -1,4 +1,4 @@
-import type {Marker} from "./Marker.ts";
+import type {Marker} from "./Marker";
 
 export interface MarkerSet {
     name: string;
